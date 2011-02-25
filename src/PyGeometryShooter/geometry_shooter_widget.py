@@ -5,17 +5,72 @@ Created on 25-02-2011
 '''
 import math
 
+from PyQt4.QtCore import QTimer, SIGNAL, SLOT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui
 from PyQt4.QtOpenGL import QGLWidget
 
+from moving_target import MovingTarget
+
 class GeometryShooterWidget(QGLWidget):
-    def __init__(self, parent):
+    
+    def __init__(self, parent, timerInterval):
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(500, 500)
+        
+        self.rtri = 0
+        self.rquad = 0
+        
+        if timerInterval == 0: 
+            self.m_timer = 0;
+        else:
+            self.m_timer = QTimer()
+            self.connect( self.m_timer, SIGNAL("timeout()"), self.timeOut)
+            self.m_timer.start(timerInterval)
+    
 
     def paintGL(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        self.drawSpiral()
+        target = MovingTarget()
+        target.draw(self.rquad)
+    
+    def resizeGL(self, width, height):
+        height = height or 1
+
+        glViewport( 0, 0, width, height )
+    
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        # gluPerspective(45.0f,(GLfloat)width/(GLfloat)height,0.1f,100.0f);
+        fieldOfView = 45.0
+        zNear = 0.1
+        zFar = 255.0
+        aspect = float(width)/float(height);
+        
+        fH = math.tan(fieldOfView / 360.0 * 3.14159) * zNear;
+        fW = fH * aspect;
+        glFrustum( -fW, fW, -fH, fH, zNear, zFar );
+        # glOrtho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 255.0f);
+    
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+    
+    def initializeGL(self):
+        # set viewing projection
+        glShadeModel(GL_SMOOTH);
+
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClearDepth(1.0);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+        
+    def drawSpiral(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         
@@ -55,18 +110,9 @@ class GeometryShooterWidget(QGLWidget):
         glVertexPointerf(spiral_array)
         glDrawArrays(GL_LINE_STRIP, 0, len(spiral_array))
         glFlush()
-
-    def resizeGL(self, w, h):
-        glViewport(0, 0, w, h)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(40.0, 1.0, 1.0, 30.0)
-    
-    def initializeGL(self):
-        # set viewing projection
-        glClearColor(0.0, 0.0, 0.0, 1.0)
-        glClearDepth(1.0)
-
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(40.0, 1.0, 1.0, 30.0)
+        
+    def timeOut(self):
+        self.rtri += 0.5
+        self.rquad -= 0.25
+        
+        self.updateGL()

@@ -9,11 +9,10 @@ from geometry_shooter_widget import GeometryShooterWidget
 
 # You don't need anything below this
 class GeometryShooter(QtGui.QMainWindow):
-    ''' Example class for using SpiralWidget'''
     
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        widget = GeometryShooterWidget(self)    
+        widget = GeometryShooterWidget(self, 1)    
         self.setCentralWidget(widget)
         
 if __name__ == '__main__':
