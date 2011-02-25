@@ -5,10 +5,9 @@ Created on 25-02-2011
 '''
 import math
 
-# import OpenGL.GL
 from OpenGL.GL import *
-# import OpenGL
 from OpenGL.GLU import *
+from PyQt4 import QtGui
 from PyQt4.QtOpenGL import QGLWidget
 
 class GeometryShooterWidget(QGLWidget):
