@@ -3,21 +3,25 @@ Created on 25-02-2011
 
 @author: John
 '''
-import math
+# from pyopenal import *
+import math, pyopenal
 
-from PyQt4.QtCore import QTimer, SIGNAL, SLOT
+from PyQt4.QtCore import QTimer, SIGNAL, SLOT, Qt
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui
 from PyQt4.QtOpenGL import QGLWidget
 
 from moving_target import MovingTarget
+from the_shooter import TheShooter
 
 class GeometryShooterWidget(QGLWidget):
     
     def __init__(self, parent, timerInterval):
         QGLWidget.__init__(self, parent)
-        self.setMinimumSize(500, 500)
+        self.setMinimumSize(800, 600)
+        
+        self.initializeAL()
         
         self.rtri = 0
         self.rquad = 0
@@ -28,15 +32,52 @@ class GeometryShooterWidget(QGLWidget):
             self.m_timer = QTimer()
             self.connect( self.m_timer, SIGNAL("timeout()"), self.timeOut)
             self.m_timer.start(timerInterval)
+
+        self.populateGameWorld()
+        
     
+    def populateGameWorld(self):
+        print '*** Populating Game World'
+        self.target = MovingTarget()
+        self.shooter = TheShooter()
+        
+    def initializeAL(self):
+        pyopenal.init(None)
+        self.listener = pyopenal.Listener(22050)
+        self.listener.position = (0.0, 0.0, 0.0)
+        self.listener.at = (0.0, 0.0, 1.0)
+        self.listener.up = (0.0, 1.0, 0.0)
+        
+        self.musicBuffer = pyopenal.WaveBuffer("res/oxygene.wav")
+        self.musicSource = pyopenal.Source()
+        self.musicSource.buffer = self.musicBuffer
+        self.musicSource.position = (0.0, 0.0, 0.0)
+        self.musicSource.looping = True
+    
+    def playBackgroundMusic(self):
+        if self.musicSource.get_state() != pyopenal.AL_PLAYING:
+            self.musicSource.play()
+        else:
+            self.musicSource.stop()
+        
+    def initializeGL(self):
+        # set viewing projection
+        glShadeModel(GL_SMOOTH);
+
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClearDepth(1.0);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
 
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        self.drawSpiral()
-        target = MovingTarget()
-        target.draw(self.rquad)
-    
+        self.target.draw(self.rquad)
+        self.shooter.draw()
+        
     def resizeGL(self, width, height):
         height = height or 1
 
@@ -58,18 +99,6 @@ class GeometryShooterWidget(QGLWidget):
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
     
-    def initializeGL(self):
-        # set viewing projection
-        glShadeModel(GL_SMOOTH);
-
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClearDepth(1.0);
-
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-        
     def drawSpiral(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
@@ -116,3 +145,22 @@ class GeometryShooterWidget(QGLWidget):
         self.rquad -= 0.25
         
         self.updateGL()
+        
+    # keys
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Left:
+            self.shooter.rotate('left')
+        if key == Qt.Key_Right:
+            self.shooter.rotate('right')
+        else:
+            QtGui.QWidget.keyPressEvent(self, event)
+
+    def keyReleaseEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Left:
+            self.shooter.stopRotating()
+        if key == Qt.Key_Right:
+            self.shooter.stopRotating()
+        else:
+            QtGui.QWidget.keyPressEvent(self, event)

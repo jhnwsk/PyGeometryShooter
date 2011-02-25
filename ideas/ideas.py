@@ -5,7 +5,7 @@ Created on Jul 7, 2009
 @license:  Public Domain
 '''
 
-import math
+import math, pyopenal
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -17,7 +17,7 @@ class SpiralWidget(QGLWidget):
     Widget for drawing two spirals.
     '''
     
-    def __init__(self, parent):
+    def __init__(self, parent):        
         QGLWidget.__init__(self, parent)
         self.setMinimumSize(500, 500)
 
