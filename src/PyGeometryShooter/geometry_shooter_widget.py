@@ -8,7 +8,7 @@ import math
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui
-from PyQt4.QtOpenGL import *
+from PyQt4.QtOpenGL import QGLWidget
 
 class GeometryShooterWidget(QGLWidget):
     def __init__(self, parent):

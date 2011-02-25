@@ -3,14 +3,9 @@ Created on 25-02-2011
 
 @author: John
 '''
-import math
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
 from PyQt4 import QtGui
-from PyQt4.QtOpenGL import *
 
-from PyGeometryShooter import GeometryShooterWidget
+from geometry_shooter_widget import GeometryShooterWidget
 
 # You don't need anything below this
 class GeometryShooter(QtGui.QMainWindow):
@@ -23,6 +18,6 @@ class GeometryShooter(QtGui.QMainWindow):
         
 if __name__ == '__main__':
     app = QtGui.QApplication(['Spiral Widget Demo'])
-    window = GeometryShooterWidget()
+    window = GeometryShooter()
     window.show()
     app.exec_()
