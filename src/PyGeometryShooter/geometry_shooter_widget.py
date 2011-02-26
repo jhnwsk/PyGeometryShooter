@@ -4,7 +4,7 @@ Created on 25-02-2011
 @author: John
 '''
 # from pyopenal import *
-import math, pyopenal
+import math, pyopenal, random
 
 from PyQt4.QtCore import QTimer, SIGNAL, SLOT, Qt
 from OpenGL.GL import *
@@ -14,8 +14,12 @@ from PyQt4.QtOpenGL import QGLWidget
 
 from moving_target import MovingTarget
 from the_shooter import TheShooter
+from PyQt4.uic.Compiler.qtproxies import QtCore
 
 class GeometryShooterWidget(QGLWidget):
+    
+    __pyqtSignals__ = ("killed(int)",
+                     "died(int)")
     
     def __init__(self, parent, timerInterval):
         QGLWidget.__init__(self, parent)
@@ -25,6 +29,8 @@ class GeometryShooterWidget(QGLWidget):
         
         self.rtri = 0
         self.rquad = 0
+        self.hits = 0
+        self.deaths = 0
         
         if timerInterval == 0: 
             self.m_timer = 0;
@@ -38,21 +44,29 @@ class GeometryShooterWidget(QGLWidget):
     
     def populateGameWorld(self):
         print '*** Populating Game World'
-        self.target = MovingTarget()
+        
+        self.targets = []
+        self.projectiles = []
         self.shooter = TheShooter()
         
     def initializeAL(self):
         pyopenal.init(None)
         self.listener = pyopenal.Listener(22050)
-        self.listener.position = (0.0, 0.0, 0.0)
+        self.listener.position = (0.0, 0.0, -10.0)
         self.listener.at = (0.0, 0.0, 1.0)
         self.listener.up = (0.0, 1.0, 0.0)
+        
+        pyopenal.alDopplerFactor(10.0)
+        pyopenal.alDopplerVelocity(10.0)
         
         self.musicBuffer = pyopenal.WaveBuffer("res/oxygene.wav")
         self.musicSource = pyopenal.Source()
         self.musicSource.buffer = self.musicBuffer
         self.musicSource.position = (0.0, 0.0, 0.0)
         self.musicSource.looping = True
+        self.musicSource.gain = .25
+        
+        self.musicSource.play()
     
     def playBackgroundMusic(self):
         if self.musicSource.get_state() != pyopenal.AL_PLAYING:
@@ -75,7 +89,13 @@ class GeometryShooterWidget(QGLWidget):
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        self.target.draw(self.rquad)
+        
+        # draw the moving targets
+        for target in self.targets:
+            target.draw(self.rquad)
+        # draw the projectiles
+        for projectile in self.projectiles:
+            projectile.draw()
         self.shooter.draw()
         
     def resizeGL(self, width, height):
@@ -144,7 +164,41 @@ class GeometryShooterWidget(QGLWidget):
         self.rtri += 0.5
         self.rquad -= 0.25
         
+        start = 7500
+        
+        if self.rtri % 750 == 0 and self.rtri > start:
+            if random.randint(0, 1) == 1:
+                self.targets.append(MovingTarget(self.targets))
+            for target in self.targets:
+                if not target.isOnMap():
+                    self.targets.remove(target)
+                 
+        self.countHits(start)
+        self.countDeaths(start)
+        
         self.updateGL()
+        
+    def countHits(self, start):
+        if self.rtri % 100 == 0 and self.rtri > start:
+            for target in filter(lambda (x) : x.isAlive(), self.targets):
+                for projectile in self.projectiles:
+                    if target.isHit(projectile.getPosition()):
+                        target.die(True)
+                        self.hits += 1
+                    if not projectile.isOnMap():
+                        self.projectiles.remove(projectile)
+        
+        self.emit(SIGNAL('killed(int)'), self.hits)
+    
+    def countDeaths(self, start):
+        if self.rtri % 100 == 0 and self.rtri > start:
+            for target in filter(lambda (x) : x.isAlive(), self.targets):
+                if target.isHit(self.shooter.getPosition()):
+                        target.die(False)
+                        self.deaths += 1
+                    
+        self.emit(SIGNAL('died(int)'), self.deaths)
+        
         
     # keys
     def keyPressEvent(self, event):
@@ -153,14 +207,16 @@ class GeometryShooterWidget(QGLWidget):
             self.shooter.rotate('left')
         if key == Qt.Key_Right:
             self.shooter.rotate('right')
+        if key == Qt.Key_Space:
+            self.projectiles.append(self.shooter.shoot())
         else:
             QtGui.QWidget.keyPressEvent(self, event)
 
     def keyReleaseEvent(self, event):
         key = event.key()
         if key == Qt.Key_Left:
-            self.shooter.stopRotating()
+            0
         if key == Qt.Key_Right:
-            self.shooter.stopRotating()
+            0
         else:
             QtGui.QWidget.keyPressEvent(self, event)

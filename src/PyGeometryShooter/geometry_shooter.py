@@ -10,14 +10,28 @@ from geometry_shooter_widget import GeometryShooterWidget
 # You don't need anything below this
 class GeometryShooter(QtGui.QMainWindow):
     
+    lcdKill = QtGui.QLCDNumber
+    
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        self.widget = GeometryShooterWidget(self, 1)    
+        
+        grid = QtGui.QGridLayout()
+        
+        self.widget = GeometryShooterWidget(self, 1)
         self.setCentralWidget(self.widget)
+        
+        self.lcdKill = QtGui.QLCDNumber(self)
+        
+        self.lcdBeKilled = QtGui.QLCDNumber(self)
+        self.lcdBeKilled.move(0, 30)
+        
+        self.connect(self.widget, QtCore.SIGNAL('killed(int)'), self.lcdKill, QtCore.SLOT('display(int)') )
+        self.connect(self.widget, QtCore.SIGNAL('died(int)'), self.lcdBeKilled, QtCore.SLOT('display(int)') )
+        
         
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Message',
-            "Are you sure to quit?", QtGui.QMessageBox.Yes | 
+            "Nie chcesz juz szczelac?", QtGui.QMessageBox.Yes | 
             QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             event.accept()
@@ -30,6 +44,8 @@ class GeometryShooter(QtGui.QMainWindow):
             self.widget.playBackgroundMusic()
         if key == QtCore.Qt.Key_Q:
             self.close()
+        if key == QtCore.Qt.Key_A:
+            print "you pressed a"
         else:
             self.widget.keyPressEvent(event)
             
@@ -37,6 +53,8 @@ class GeometryShooter(QtGui.QMainWindow):
         key = event.key()
         if key == QtCore.Qt.Key_Q:
             self.close()
+        if key == QtCore.Qt.Key_A:
+            print "you released a"
         else:
             self.widget.keyReleaseEvent(event)
 
